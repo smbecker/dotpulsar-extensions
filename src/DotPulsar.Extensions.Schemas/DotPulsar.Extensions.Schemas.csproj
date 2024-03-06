@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<RootNamespace>DotPulsar</RootNamespace>
+		<PackageTags>$(PackageTags);Pulsar</PackageTags>
+		<Description>DotPulsar.Extensions.Schemas adds support for using DotPulsar Json and ProtoBuf producers, consumers, and receivers.</Description>
+		<TargetFrameworks>net7.0;net8.0</TargetFrameworks>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<LangVersion>latest</LangVersion>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="DotPulsar" />
+	</ItemGroup>
+
+</Project>

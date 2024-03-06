@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<RootNamespace>DotPulsar</RootNamespace>
+		<PackageTags>$(PackageTags);Pulsar</PackageTags>
+		<Description>DotPulsar.OpenTelemetry integrates DotPulsar with OpenTelemetry APIs.</Description>
+		<TargetFrameworks>net7.0;net8.0</TargetFrameworks>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<LangVersion>latest</LangVersion>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="DotPulsar" />
+		<PackageReference Include="OpenTelemetry.Api" />
+	</ItemGroup>
+
+</Project>
