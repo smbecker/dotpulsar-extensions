@@ -18,7 +18,7 @@
 #
 
 # Workflow to execute when a publish is made on github https://github.com/smbecker/dotpulsar-extensions/releases/new
-name: publish-to-nuget
+name: Publish
 
 on:
   release:
