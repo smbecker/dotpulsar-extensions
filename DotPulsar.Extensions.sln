@@ -22,9 +22,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{1BF9EC17-A
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotPulsar.Extensions.DependencyInjection.Tests", "test\DotPulsar.Extensions.DependencyInjection.Tests\DotPulsar.Extensions.DependencyInjection.Tests.csproj", "{8E591D05-DEBC-449B-93C6-1E49AB90C2BE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "protobuf-net.Ulid", "src\protobuf-net.Ulid\protobuf-net.Ulid.csproj", "{C68E9ABE-49E5-47F3-8C46-30A6A5CC9E7E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ulid.protobuf-net", "src\Ulid.protobuf-net\Ulid.protobuf-net.csproj", "{C68E9ABE-49E5-47F3-8C46-30A6A5CC9E7E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "protobuf-net.Ulid.Tests", "test\protobuf-net.Ulid.Tests\protobuf-net.Ulid.Tests.csproj", "{D17A4B86-7749-4D97-B718-A3926E78532C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ulid.protobuf-net.Tests", "test\Ulid.protobuf-net.Tests\Ulid.protobuf-net.Tests.csproj", "{D17A4B86-7749-4D97-B718-A3926E78532C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -15,7 +15,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\src\protobuf-net.Ulid\protobuf-net.Ulid.csproj" />
+		<ProjectReference Include="..\..\src\Ulid.protobuf-net\Ulid.protobuf-net.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
