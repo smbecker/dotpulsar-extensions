@@ -23,12 +23,13 @@ public static class PulsarServiceCollectionExtensions
 	}
 
 	public static IServiceCollection AddPulsarClient(this IServiceCollection services, IPulsarClientBuilder pulsarClientBuilder) {
+		ArgumentNullException.ThrowIfNull(pulsarClientBuilder);
 		return AddPulsarClient(services, pulsarClientBuilder.Build());
 	}
 
 	public static IServiceCollection AddPulsarClient(this IServiceCollection services) {
-		services.AddOptions<PulsarClientOptions>().Configure<IConfiguration>((opts, config) => BindOptions(opts, config.GetSection("Pulsar")));
-		return AddPulsarClient(services, (sp, builder) => {
+		services.AddOptions<PulsarClientOptions>().Configure<IConfiguration>(static (opts, config) => BindOptions(opts, config.GetSection("Pulsar")));
+		return AddPulsarClient(services, static (sp, builder) => {
 			var options = sp.GetRequiredService<IOptions<PulsarClientOptions>>().Value;
 			options.Apply(builder);
 		});
@@ -40,9 +41,9 @@ public static class PulsarServiceCollectionExtensions
 
 	public static IServiceCollection AddPulsarClient(this IServiceCollection services, Action<PulsarClientOptions> configure) {
 		services.AddOptions<PulsarClientOptions>().Configure(configure);
-		return AddPulsarClient(services, (sp, builder) => {
+		return AddPulsarClient(services, static (sp, builder) => {
 			var options = sp.GetRequiredService<IOptions<PulsarClientOptions>>().Value;
-			builder.UseOptions(options);
+			options.Apply(builder);
 		});
 	}
 
@@ -51,6 +52,7 @@ public static class PulsarServiceCollectionExtensions
 	}
 
 	public static IServiceCollection AddPulsarClient(this IServiceCollection services, Action<IServiceProvider, IPulsarClientBuilder> configure) {
+		ArgumentNullException.ThrowIfNull(configure);
 		return services.AddPulsarClient(sp => {
 			var builder = PulsarClient.Builder();
 			configure(sp, builder);
@@ -97,9 +99,23 @@ public static class PulsarServiceCollectionExtensions
 				fullChain.ImportFromPemFile(Path);
 
 				if (KeyPath != null) {
-					var certificate = LoadCertificateKey(new X509Certificate2(Path), KeyPath, Password);
+#pragma warning disable CA2000
+					var certificate = new X509Certificate2(Path);
+#pragma warning restore CA2000
+					try {
+						certificate = LoadCertificateKey(certificate, KeyPath, Password);
+					} catch {
+						certificate.Dispose();
+						throw;
+					}
+
 					if (OperatingSystem.IsWindows()) {
-						return PersistKey(certificate);
+						try {
+							certificate = PersistKey(certificate);
+						} catch {
+							certificate.Dispose();
+							throw;
+						}
 					}
 					return certificate;
 				}

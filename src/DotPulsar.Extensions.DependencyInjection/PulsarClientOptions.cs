@@ -103,6 +103,8 @@ public class PulsarClientOptions
 	}
 
 	public void Apply(IPulsarClientBuilder builder) {
+		ArgumentNullException.ThrowIfNull(builder);
+
 		if (ServiceUrl != null) {
 			builder.ServiceUrl(ServiceUrl);
 		}

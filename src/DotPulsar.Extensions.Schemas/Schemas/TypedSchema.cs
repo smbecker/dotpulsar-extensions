@@ -16,7 +16,7 @@ public abstract class TypedSchema<TMessage> : ISchema<TMessage>
 	}
 
 	protected TypedSchema(ISchema<ReadOnlySequence<byte>> byteSchema)
-		: this(byteSchema.SchemaInfo, byteSchema) {
+		: this((byteSchema ?? throw new ArgumentNullException(nameof(byteSchema))).SchemaInfo, byteSchema) {
 	}
 
 	protected TypedSchema(SchemaInfo schemaInfo, ISchema<ReadOnlySequence<byte>> byteSchema) {

@@ -6,10 +6,7 @@ namespace OpenTelemetry.Trace;
 public static class PulsarTracerProviderBuilderExtensions
 {
 	public static TracerProviderBuilder AddPulsarInstrumentation(this TracerProviderBuilder builder) {
-		if (builder is null) {
-			throw new ArgumentNullException(nameof(builder));
-		}
-
+		ArgumentNullException.ThrowIfNull(builder);
 		builder.AddSource(Constants.ClientName);
 		return builder;
 	}

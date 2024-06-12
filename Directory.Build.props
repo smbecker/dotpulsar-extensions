@@ -1,8 +1,12 @@
 <Project>
 	<PropertyGroup>
+		<AnalysisMode>All</AnalysisMode>
 		<TreatWarningsAsErrors>True</TreatWarningsAsErrors>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<Authors>Shaun Becker</Authors>
 	</PropertyGroup>
 	<ItemGroup>
+		<PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="all" />
 		<PackageReference Include="MinVer" PrivateAssets="all" />
 	</ItemGroup>
 </Project>

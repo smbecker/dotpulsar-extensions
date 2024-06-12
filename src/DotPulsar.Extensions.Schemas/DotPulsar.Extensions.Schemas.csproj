@@ -3,17 +3,22 @@
 	<PropertyGroup>
 		<RootNamespace>DotPulsar</RootNamespace>
 		<PackageTags>$(PackageTags);Pulsar</PackageTags>
-		<Description>DotPulsar.Extensions.Schemas adds support for using DotPulsar Json and ProtoBuf producers, consumers, and receivers.</Description>
+		<Description>DotPulsar.Extensions.Schemas adds support for using Json and ProtoBuf producers, consumers, and receivers.</Description>
 		<TargetFrameworks>net7.0;net8.0</TargetFrameworks>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<LangVersion>latest</LangVersion>
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="DotPulsar" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="README.md" Pack="true" PackagePath="" />
 	</ItemGroup>
 
 </Project>

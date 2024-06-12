@@ -7,6 +7,7 @@
 		<Nullable>enable</Nullable>
 		<LangVersion>latest</LangVersion>
 		<IsPackable>False</IsPackable>
+		<NoWarn>$(NoWarn);CA1707</NoWarn>
 	</PropertyGroup>
 
 	<ItemGroup>
