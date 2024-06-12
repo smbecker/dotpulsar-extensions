@@ -1,0 +1,10 @@
+syntax="proto3";
+
+package ulid;
+
+option csharp_namespace="System";
+
+message Ulid {
+	fixed64 upper = 1;
+	fixed64 lower = 2;
+}

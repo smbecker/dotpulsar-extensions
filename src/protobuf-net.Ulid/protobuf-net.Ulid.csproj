@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<RootNamespace>ProtoBuf.Meta</RootNamespace>
+		<TargetFrameworks>netstandard2.0;net6.0;net7.0;net8.0</TargetFrameworks>
+		<LangVersion>latest</LangVersion>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<LangVersion>latest</LangVersion>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+	</PropertyGroup>
+	<ItemGroup>
+		<None Include="ulid/*.proto">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>True</Pack>
+			<PackagePath>contentFiles/any/any/ulid</PackagePath>
+		</None>
+		<None Include="README.md" Pack="true" PackagePath="" />
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="protobuf-net"/>
+		<PackageReference Include="Ulid"/>
+	</ItemGroup>
+</Project>
