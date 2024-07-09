@@ -11,7 +11,10 @@ public static class JsonSchema
 		set;
 	} = new(JsonSerializerDefaults.Web);
 
-	public static ISchema<TMessage> Get<TMessage>() {
+	public static ISchema<TMessage> Get<TMessage>(JsonSerializerOptions? serializerOptions = null) {
+		if (serializerOptions is not null) {
+			return new JsonSchema<TMessage>(serializerOptions);
+		}
 		return JsonSchema<TMessage>.Instance;
 	}
 }
