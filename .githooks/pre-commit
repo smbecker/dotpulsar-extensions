@@ -19,7 +19,7 @@ fi
 
 # test
 echo -e "${YELLOW}Running pre-commit hook, dotnet test...${NC}"
-dotnet test --no-build --filter "Category!=UAT&Category!=INTEGRATION"
+dotnet test --no-build --filter "Category!=FUNCTIONAL"
 rc=$?
 if [[ $rc != 0 ]] ; then
 	echo -e "${RED}Test(s) failed, please fix and commit again. To skip pre-commit hook use 'git commit --no-verify'.${NC}"

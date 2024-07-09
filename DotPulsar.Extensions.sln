@@ -26,6 +26,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ulid.protobuf-net", "src\Ul
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ulid.protobuf-net.Tests", "test\Ulid.protobuf-net.Tests\Ulid.protobuf-net.Tests.csproj", "{D17A4B86-7749-4D97-B718-A3926E78532C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotPulsar.Extensions.Resiliency", "src\DotPulsar.Extensions.Resiliency\DotPulsar.Extensions.Resiliency.csproj", "{8A37F8B1-9FEB-42E9-B860-4D53145E1578}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotPulsar.Extensions.Resiliency.Tests", "test\DotPulsar.Extensions.Resiliency.Tests\DotPulsar.Extensions.Resiliency.Tests.csproj", "{77CB0E44-C478-475D-A2C1-BD8241F2C91D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -59,6 +63,14 @@ Global
 		{D17A4B86-7749-4D97-B718-A3926E78532C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D17A4B86-7749-4D97-B718-A3926E78532C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D17A4B86-7749-4D97-B718-A3926E78532C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A37F8B1-9FEB-42E9-B860-4D53145E1578}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A37F8B1-9FEB-42E9-B860-4D53145E1578}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A37F8B1-9FEB-42E9-B860-4D53145E1578}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A37F8B1-9FEB-42E9-B860-4D53145E1578}.Release|Any CPU.Build.0 = Release|Any CPU
+		{77CB0E44-C478-475D-A2C1-BD8241F2C91D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{77CB0E44-C478-475D-A2C1-BD8241F2C91D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{77CB0E44-C478-475D-A2C1-BD8241F2C91D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{77CB0E44-C478-475D-A2C1-BD8241F2C91D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{63D42F99-84FF-4461-B756-4083FE4BCBE7} = {2388C1EA-3CB5-4DC0-A615-ACE4EFCD9488}
@@ -67,5 +79,7 @@ Global
 		{8E591D05-DEBC-449B-93C6-1E49AB90C2BE} = {1BF9EC17-AD3D-4364-BB32-5B7D3E5A4566}
 		{C68E9ABE-49E5-47F3-8C46-30A6A5CC9E7E} = {2388C1EA-3CB5-4DC0-A615-ACE4EFCD9488}
 		{D17A4B86-7749-4D97-B718-A3926E78532C} = {1BF9EC17-AD3D-4364-BB32-5B7D3E5A4566}
+		{8A37F8B1-9FEB-42E9-B860-4D53145E1578} = {2388C1EA-3CB5-4DC0-A615-ACE4EFCD9488}
+		{77CB0E44-C478-475D-A2C1-BD8241F2C91D} = {1BF9EC17-AD3D-4364-BB32-5B7D3E5A4566}
 	EndGlobalSection
 EndGlobal
