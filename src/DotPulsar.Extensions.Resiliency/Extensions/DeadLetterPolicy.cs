@@ -31,21 +31,44 @@ public class DeadLetterPolicy : IDeadLetterPolicy, IAsyncDisposable
 	public const string RetryTopicSuffix = "-RETRY";
 	public const string DeadLetterTopicSuffix = "-DLQ";
 
-	private readonly Lazy<IProducer<ReadOnlySequence<byte>>> deadProducer;
-	private readonly Lazy<IProducer<ReadOnlySequence<byte>>>? retryProducer;
+	private readonly Func<MessageMetadata, ReadOnlySequence<byte>, CancellationToken, ValueTask> deadLetterProducer;
+	private readonly Func<ValueTask>? disposeDeadLetterProducer;
+	private readonly Func<MessageMetadata, ReadOnlySequence<byte>, CancellationToken, ValueTask>? retryProducer;
+	private readonly Func<ValueTask>? disposeRetryProducer;
+
+	public DeadLetterPolicy(
+		Func<MessageMetadata, ReadOnlySequence<byte>, CancellationToken, ValueTask> deadLetterProducer,
+		Func<MessageMetadata, ReadOnlySequence<byte>, CancellationToken, ValueTask>? retryProducer = null,
+		int maxRedeliveryCount = DefaultMaxReconsumeTimes,
+		TimeSpan? retryDelay = null) {
+		this.deadLetterProducer = deadLetterProducer ?? throw new ArgumentNullException(nameof(deadLetterProducer));
+		this.retryProducer = retryProducer;
+		MaxRedeliveryCount = maxRedeliveryCount;
+		RetryDelay = retryDelay;
+	}
 
 	public DeadLetterPolicy(
 		IProducerBuilder<ReadOnlySequence<byte>> deadLetterProducerBuilder,
-		IProducerBuilder<ReadOnlySequence<byte>>? retryLetterProducerBuilder = null,
-		int maxRedeliveryCount = 16,
+		IProducerBuilder<ReadOnlySequence<byte>>? retryProducerBuilder = null,
+		int maxRedeliveryCount = DefaultMaxReconsumeTimes,
 		TimeSpan? retryDelay = null,
 		ResiliencePipeline? resiliencePipeline = null) {
 		ArgumentNullException.ThrowIfNull(deadLetterProducerBuilder);
 
-		deadProducer = new Lazy<IProducer<ReadOnlySequence<byte>>>(() => deadLetterProducerBuilder.ToResilientProducer(resiliencePipeline));
-		retryProducer = retryLetterProducerBuilder != null
-			? new Lazy<IProducer<ReadOnlySequence<byte>>>(() => retryLetterProducerBuilder.ToResilientProducer(resiliencePipeline))
-			: null;
+		var lazyDeadLetterProducer = new Lazy<IProducer<ReadOnlySequence<byte>>>(() => deadLetterProducerBuilder.CreateResilient(resiliencePipeline));
+		disposeDeadLetterProducer = () => lazyDeadLetterProducer.IsValueCreated
+			? lazyDeadLetterProducer.Value.DisposeAsync()
+			: ValueTask.CompletedTask;
+		deadLetterProducer = async (metadata, message, ct) => await lazyDeadLetterProducer.Value.Send(metadata, message, ct).ConfigureAwait(false);
+
+		if (retryProducerBuilder != null) {
+			var lazyRetryProducer = new Lazy<IProducer<ReadOnlySequence<byte>>>(() => retryProducerBuilder.CreateResilient(resiliencePipeline));
+			disposeRetryProducer = () => lazyRetryProducer.IsValueCreated
+				? lazyRetryProducer.Value.DisposeAsync()
+				: ValueTask.CompletedTask;
+			retryProducer = async (metadata, message, ct) => await lazyRetryProducer.Value.Send(metadata, message, ct).ConfigureAwait(false);
+		}
+
 		MaxRedeliveryCount = maxRedeliveryCount;
 		RetryDelay = retryDelay;
 	}
@@ -60,12 +83,12 @@ public class DeadLetterPolicy : IDeadLetterPolicy, IAsyncDisposable
 
 	public async ValueTask DisposeAsync() {
 		try {
-			if (retryProducer != null && retryProducer.IsValueCreated) {
-				await retryProducer.Value.DisposeAsync().ConfigureAwait(false);
+			if (disposeRetryProducer != null) {
+				await disposeRetryProducer().ConfigureAwait(false);
 			}
 		} finally {
-			if (deadProducer.IsValueCreated) {
-				await deadProducer.Value.DisposeAsync().ConfigureAwait(false);
+			if (disposeDeadLetterProducer != null) {
+				await disposeDeadLetterProducer().ConfigureAwait(false);
 			}
 		}
 		GC.SuppressFinalize(this);
@@ -79,7 +102,7 @@ public class DeadLetterPolicy : IDeadLetterPolicy, IAsyncDisposable
 			var reconsumeTimes = GetReconsumeAndUpdate(metadata);
 			if (reconsumeTimes <= MaxRedeliveryCount) {
 				try {
-					await retryProducer.Value.Send(metadata, message.Data, cancellationToken).ConfigureAwait(false);
+					await retryProducer(metadata, message.Data, cancellationToken).ConfigureAwait(false);
 					return;
 #pragma warning disable CA1031
 				} catch {
@@ -90,7 +113,7 @@ public class DeadLetterPolicy : IDeadLetterPolicy, IAsyncDisposable
 			}
 		}
 
-		await deadProducer.Value.Send(metadata, message.Data, cancellationToken).ConfigureAwait(false);
+		await deadLetterProducer(metadata, message.Data, cancellationToken).ConfigureAwait(false);
 
 		static MessageMetadata PrepareMetadata(IMessage message, TimeSpan? delayTime, IEnumerable<KeyValuePair<string, string?>>? customProperties) {
 			var metadata = new MessageMetadata {

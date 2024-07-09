@@ -27,7 +27,7 @@ You will need to have a separate consumer set up to listen to the retry topic in
 ```c#
 await using var producer = client.NewProducer(Schema.String)
 	.Topic("...")
-	.ToResilientProducer(pipeline => {
+	.CreateResilient(pipeline => {
 		pipeline.AddRetryProducer(options => {
 			options.MaxRetryAttempts = 3;
 		});

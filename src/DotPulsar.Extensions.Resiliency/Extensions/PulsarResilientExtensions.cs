@@ -62,7 +62,7 @@ public static class PulsarResilientExtensions
 			&& exception is ProducerFaultedException or ProducerClosedException or ObjectDisposedException;
 	}
 
-	public static IProducer<TMessage> ToResilientProducer<TMessage>(this IProducerBuilder<TMessage> producerBuilder, ResiliencePipeline? resiliencePipeline = null) {
+	public static IProducer<TMessage> CreateResilient<TMessage>(this IProducerBuilder<TMessage> producerBuilder, ResiliencePipeline? resiliencePipeline = null) {
 		ArgumentNullException.ThrowIfNull(producerBuilder);
 
 		if (resiliencePipeline == null || Equals(resiliencePipeline, ResiliencePipeline.Empty)) {
@@ -71,7 +71,7 @@ public static class PulsarResilientExtensions
 		return new ResilientProducer<TMessage>(producerBuilder, resiliencePipeline);
 	}
 
-	public static IProducer<TMessage> ToResilientProducer<TMessage>(this IProducerBuilder<TMessage> producerBuilder, Action<ResiliencePipelineBuilder>? configurePipelineBuilder = null) {
+	public static IProducer<TMessage> CreateResilient<TMessage>(this IProducerBuilder<TMessage> producerBuilder, Action<ResiliencePipelineBuilder>? configurePipelineBuilder = null) {
 		var pipelineBuilder = new ResiliencePipelineBuilder();
 		if (configurePipelineBuilder != null) {
 			configurePipelineBuilder(pipelineBuilder);
@@ -79,6 +79,6 @@ public static class PulsarResilientExtensions
 			pipelineBuilder.AddRetryProducer();
 		}
 
-		return ToResilientProducer(producerBuilder, pipelineBuilder.Build());
+		return CreateResilient(producerBuilder, pipelineBuilder.Build());
 	}
 }
