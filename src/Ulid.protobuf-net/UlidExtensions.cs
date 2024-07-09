@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -8,7 +9,13 @@ public static class UlidExtensions
 	private const string Name = ".ulid.Ulid";
 	private const string Origin = "ulid.proto";
 
-	public static RuntimeTypeModel AddUlid(this RuntimeTypeModel? model) {
+	public static RuntimeTypeModel AddUlid(this RuntimeTypeModel? model) => model.AddUlidSurrogate<UlidSurrogate>();
+
+	public static RuntimeTypeModel AddUlidAsString(this RuntimeTypeModel? model) => model.AddUlidSurrogate<UlidStringSurrogate>();
+
+	public static RuntimeTypeModel AddUlidAsGuidString(this RuntimeTypeModel? model) => model.AddUlidSurrogate<GuidStringSurrogate>();
+
+	private static RuntimeTypeModel AddUlidSurrogate<TSurrogate>(this RuntimeTypeModel? model) {
 		model ??= RuntimeTypeModel.Default;
 		Add<Ulid>(model);
 		Add<Ulid?>(model);
@@ -18,7 +25,7 @@ public static class UlidExtensions
 			var metaModel = model.Add<T>(false);
 			metaModel.Origin = Origin;
 			metaModel.Name = Name;
-			metaModel.SetSurrogate(typeof(UlidSurrogate));
+			metaModel.SetSurrogate(typeof(TSurrogate));
 		}
 	}
 
@@ -62,6 +69,84 @@ public static class UlidExtensions
 			}
 
 			return new UlidSurrogate(source.Value);
+		}
+	}
+
+	[ProtoContract(Name = Name, Origin = Origin)]
+	internal struct UlidStringSurrogate
+	{
+		[ProtoMember(1, Name = "value")]
+		private readonly string value;
+
+		public UlidStringSurrogate(Ulid value) {
+			this.value = value.ToString();
+		}
+
+		public Ulid ToUlid() {
+			return Ulid.Parse(value, CultureInfo.InvariantCulture);
+		}
+
+		public static implicit operator Ulid(UlidStringSurrogate surrogate) {
+			return surrogate.ToUlid();
+		}
+
+		public static implicit operator Ulid?(UlidStringSurrogate? surrogate) {
+			if (surrogate is null) {
+				return null;
+			}
+
+			return surrogate.Value.ToUlid();
+		}
+
+		public static implicit operator UlidStringSurrogate(Ulid source) {
+			return new UlidStringSurrogate(source);
+		}
+
+		public static implicit operator UlidStringSurrogate?(Ulid? source) {
+			if (source is null) {
+				return null;
+			}
+
+			return new UlidStringSurrogate(source.Value);
+		}
+	}
+
+	[ProtoContract(Name = Name, Origin = Origin)]
+	internal struct GuidStringSurrogate
+	{
+		[ProtoMember(1, Name = "value")]
+		private readonly string value;
+
+		public GuidStringSurrogate(Ulid value) {
+			this.value = value.ToGuid().ToString();
+		}
+
+		public Ulid ToUlid() {
+			return new Ulid(Guid.Parse(value));
+		}
+
+		public static implicit operator Ulid(GuidStringSurrogate surrogate) {
+			return surrogate.ToUlid();
+		}
+
+		public static implicit operator Ulid?(GuidStringSurrogate? surrogate) {
+			if (surrogate is null) {
+				return null;
+			}
+
+			return surrogate.Value.ToUlid();
+		}
+
+		public static implicit operator GuidStringSurrogate(Ulid source) {
+			return new GuidStringSurrogate(source);
+		}
+
+		public static implicit operator GuidStringSurrogate?(Ulid? source) {
+			if (source is null) {
+				return null;
+			}
+
+			return new GuidStringSurrogate(source.Value);
 		}
 	}
 }
