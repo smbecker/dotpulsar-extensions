@@ -30,7 +30,6 @@ internal sealed class ResilientProducer<TMessage> : IProducer<TMessage>
 	public ResilientProducer(IProducerBuilder<TMessage> producerBuilder, ResiliencePipeline? resiliencePipeline = null) {
 		this.producerBuilder = producerBuilder ?? throw new ArgumentNullException(nameof(producerBuilder));
 		this.resiliencePipeline = resiliencePipeline ?? ResiliencePipeline.Empty;
-		producerBuilder.StateChangedHandler(new StateChangedHandler(this));
 		producer = GetOrCreateProducer();
 		ServiceUrl = producer.ServiceUrl;
 		Topic = producer.Topic;
@@ -69,6 +68,7 @@ internal sealed class ResilientProducer<TMessage> : IProducer<TMessage>
 		var created = producerBuilder.Create();
 		var result = Interlocked.CompareExchange(ref producer, created, null);
 		if (result == null) {
+			_ = StateMonitor.MonitorProducer(created, new StateChangedHandler(this));
 			return created;
 		}
 
