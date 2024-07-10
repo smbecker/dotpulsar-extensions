@@ -19,10 +19,15 @@ namespace DotPulsar.Extensions;
 public class DeadLetterFailureHandler : IConsumerFailureHandler
 {
 	private readonly IDeadLetterPolicy deadLetterPolicy;
+	private readonly Func<IMessage, Exception, TimeSpan?>? delayTimeSelector;
 	private readonly Func<Exception, IEnumerable<KeyValuePair<string, string?>>> exceptionSerializer;
 
-	public DeadLetterFailureHandler(IDeadLetterPolicy deadLetterPolicy, Func<Exception, IEnumerable<KeyValuePair<string, string?>>>? exceptionSerializer = null) {
+	public DeadLetterFailureHandler(
+		IDeadLetterPolicy deadLetterPolicy,
+		Func<Exception, IEnumerable<KeyValuePair<string, string?>>>? exceptionSerializer = null,
+		Func<IMessage, Exception, TimeSpan?>? delayTimeSelector = null) {
 		this.deadLetterPolicy = deadLetterPolicy ?? throw new ArgumentNullException(nameof(deadLetterPolicy));
+		this.delayTimeSelector = delayTimeSelector;
 		this.exceptionSerializer = exceptionSerializer ?? SerializeException;
 
 		static IEnumerable<KeyValuePair<string, string?>> SerializeException(Exception exception) {
@@ -34,6 +39,6 @@ public class DeadLetterFailureHandler : IConsumerFailureHandler
 
 	public ValueTask HandleAsync(IMessage message, Exception exception, CancellationToken cancellationToken) {
 		var properties = exceptionSerializer(exception);
-		return deadLetterPolicy.ReconsumeLater(message, customProperties: properties, cancellationToken: cancellationToken);
+		return deadLetterPolicy.ReconsumeLater(message, delayTime: delayTimeSelector?.Invoke(message, exception), customProperties: properties, cancellationToken: cancellationToken);
 	}
 }
