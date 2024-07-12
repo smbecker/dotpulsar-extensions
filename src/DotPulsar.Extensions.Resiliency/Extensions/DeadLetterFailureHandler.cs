@@ -19,14 +19,17 @@ namespace DotPulsar.Extensions;
 public class DeadLetterFailureHandler : IConsumerFailureHandler
 {
 	private readonly IDeadLetterPolicy deadLetterPolicy;
+	private readonly Func<IMessage, Exception, bool>? retryExceptionHandler;
 	private readonly Func<IMessage, Exception, TimeSpan?>? delayTimeSelector;
 	private readonly Func<Exception, IEnumerable<KeyValuePair<string, string?>>> exceptionSerializer;
 
 	public DeadLetterFailureHandler(
 		IDeadLetterPolicy deadLetterPolicy,
+		Func<IMessage, Exception, bool>? retryExceptionHandler = null,
 		Func<Exception, IEnumerable<KeyValuePair<string, string?>>>? exceptionSerializer = null,
 		Func<IMessage, Exception, TimeSpan?>? delayTimeSelector = null) {
 		this.deadLetterPolicy = deadLetterPolicy ?? throw new ArgumentNullException(nameof(deadLetterPolicy));
+		this.retryExceptionHandler = retryExceptionHandler;
 		this.delayTimeSelector = delayTimeSelector;
 		this.exceptionSerializer = exceptionSerializer ?? SerializeException;
 
@@ -38,7 +41,8 @@ public class DeadLetterFailureHandler : IConsumerFailureHandler
 	}
 
 	public ValueTask HandleAsync(IMessage message, Exception exception, CancellationToken cancellationToken) {
+		var preventRetry = retryExceptionHandler == null || retryExceptionHandler(message, exception);
 		var properties = exceptionSerializer(exception);
-		return deadLetterPolicy.ReconsumeLater(message, delayTime: delayTimeSelector?.Invoke(message, exception), customProperties: properties, cancellationToken: cancellationToken);
+		return deadLetterPolicy.ReconsumeLater(message, delayTime: delayTimeSelector?.Invoke(message, exception), customProperties: properties, preventRetry: preventRetry, cancellationToken: cancellationToken);
 	}
 }

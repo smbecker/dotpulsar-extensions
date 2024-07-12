@@ -31,35 +31,35 @@ public class DeadLetterPolicy : IDeadLetterPolicy, IAsyncDisposable
 	public const string RetryTopicSuffix = "-RETRY";
 	public const string DeadLetterTopicSuffix = "-DLQ";
 
-	private readonly Func<MessageMetadata, ReadOnlySequence<byte>, CancellationToken, ValueTask> deadLetterProducer;
+	private readonly Func<MessageMetadata, ReadOnlySequence<byte>, CancellationToken, ValueTask>? deadLetterProducer;
 	private readonly Func<ValueTask>? disposeDeadLetterProducer;
 	private readonly Func<MessageMetadata, ReadOnlySequence<byte>, CancellationToken, ValueTask>? retryProducer;
 	private readonly Func<ValueTask>? disposeRetryProducer;
 
 	public DeadLetterPolicy(
-		Func<MessageMetadata, ReadOnlySequence<byte>, CancellationToken, ValueTask> deadLetterProducer,
+		Func<MessageMetadata, ReadOnlySequence<byte>, CancellationToken, ValueTask>? deadLetterProducer,
 		Func<MessageMetadata, ReadOnlySequence<byte>, CancellationToken, ValueTask>? retryProducer = null,
 		int maxRedeliveryCount = DefaultMaxReconsumeTimes,
 		TimeSpan? retryDelay = null) {
-		this.deadLetterProducer = deadLetterProducer ?? throw new ArgumentNullException(nameof(deadLetterProducer));
+		this.deadLetterProducer = deadLetterProducer;
 		this.retryProducer = retryProducer;
 		MaxRedeliveryCount = maxRedeliveryCount;
 		RetryDelay = retryDelay;
 	}
 
 	public DeadLetterPolicy(
-		IProducerBuilder<ReadOnlySequence<byte>> deadLetterProducerBuilder,
+		IProducerBuilder<ReadOnlySequence<byte>>? deadLetterProducerBuilder = null,
 		IProducerBuilder<ReadOnlySequence<byte>>? retryProducerBuilder = null,
 		int maxRedeliveryCount = DefaultMaxReconsumeTimes,
 		TimeSpan? retryDelay = null,
 		ResiliencePipeline? resiliencePipeline = null) {
-		ArgumentNullException.ThrowIfNull(deadLetterProducerBuilder);
-
-		var lazyDeadLetterProducer = new Lazy<IProducer<ReadOnlySequence<byte>>>(() => deadLetterProducerBuilder.CreateResilient(resiliencePipeline));
-		disposeDeadLetterProducer = () => lazyDeadLetterProducer.IsValueCreated
-			? lazyDeadLetterProducer.Value.DisposeAsync()
-			: ValueTask.CompletedTask;
-		deadLetterProducer = async (metadata, message, ct) => await lazyDeadLetterProducer.Value.Send(metadata, message, ct).ConfigureAwait(false);
+		if (deadLetterProducerBuilder != null) {
+			var lazyDeadLetterProducer = new Lazy<IProducer<ReadOnlySequence<byte>>>(() => deadLetterProducerBuilder.CreateResilient(resiliencePipeline));
+			disposeDeadLetterProducer = () => lazyDeadLetterProducer.IsValueCreated
+				? lazyDeadLetterProducer.Value.DisposeAsync()
+				: ValueTask.CompletedTask;
+			deadLetterProducer = async (metadata, message, ct) => await lazyDeadLetterProducer.Value.Send(metadata, message, ct).ConfigureAwait(false);
+		}
 
 		if (retryProducerBuilder != null) {
 			var lazyRetryProducer = new Lazy<IProducer<ReadOnlySequence<byte>>>(() => retryProducerBuilder.CreateResilient(resiliencePipeline));
@@ -94,11 +94,11 @@ public class DeadLetterPolicy : IDeadLetterPolicy, IAsyncDisposable
 		GC.SuppressFinalize(this);
 	}
 
-	public async ValueTask ReconsumeLater(IMessage message, TimeSpan? delayTime = null, IEnumerable<KeyValuePair<string, string?>>? customProperties = null, CancellationToken cancellationToken = default) {
+	public async ValueTask ReconsumeLater(IMessage message, TimeSpan? delayTime = null, IEnumerable<KeyValuePair<string, string?>>? customProperties = null, bool preventRetry = false, CancellationToken cancellationToken = default) {
 		ArgumentNullException.ThrowIfNull(message);
 
 		var metadata = PrepareMetadata(message, delayTime ?? RetryDelay, customProperties);
-		if (retryProducer != null) {
+		if (retryProducer != null && !preventRetry) {
 			var reconsumeTimes = GetReconsumeAndUpdate(metadata);
 			if (reconsumeTimes <= MaxRedeliveryCount) {
 				try {
@@ -113,7 +113,9 @@ public class DeadLetterPolicy : IDeadLetterPolicy, IAsyncDisposable
 			}
 		}
 
-		await deadLetterProducer(metadata, message.Data, cancellationToken).ConfigureAwait(false);
+		if (deadLetterProducer != null) {
+			await deadLetterProducer(metadata, message.Data, cancellationToken).ConfigureAwait(false);
+		}
 
 		static MessageMetadata PrepareMetadata(IMessage message, TimeSpan? delayTime, IEnumerable<KeyValuePair<string, string?>>? customProperties) {
 			var metadata = new MessageMetadata {

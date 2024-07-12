@@ -16,5 +16,5 @@ namespace DotPulsar.Abstractions;
 
 public interface IDeadLetterPolicy
 {
-	ValueTask ReconsumeLater(IMessage message, TimeSpan? delayTime = null, IEnumerable<KeyValuePair<string, string?>>? customProperties = null, CancellationToken cancellationToken = default);
+	ValueTask ReconsumeLater(IMessage message, TimeSpan? delayTime = null, IEnumerable<KeyValuePair<string, string?>>? customProperties = null, bool preventRetry = false, CancellationToken cancellationToken = default);
 }
