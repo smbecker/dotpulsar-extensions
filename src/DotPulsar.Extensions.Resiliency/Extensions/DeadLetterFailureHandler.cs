@@ -41,7 +41,7 @@ public class DeadLetterFailureHandler : IConsumerFailureHandler
 	}
 
 	public ValueTask HandleAsync(IMessage message, Exception exception, CancellationToken cancellationToken) {
-		var preventRetry = retryExceptionHandler == null || retryExceptionHandler(message, exception);
+		var preventRetry = retryExceptionHandler == null || !retryExceptionHandler(message, exception);
 		var properties = exceptionSerializer(exception);
 		return deadLetterPolicy.ReconsumeLater(message, delayTime: delayTimeSelector?.Invoke(message, exception), customProperties: properties, preventRetry: preventRetry, cancellationToken: cancellationToken);
 	}
