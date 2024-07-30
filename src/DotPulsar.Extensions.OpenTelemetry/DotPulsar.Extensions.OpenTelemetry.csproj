@@ -4,7 +4,7 @@
 		<RootNamespace>DotPulsar</RootNamespace>
 		<PackageTags>$(PackageTags);Pulsar</PackageTags>
 		<Description>DotPulsar.OpenTelemetry integrates DotPulsar with OpenTelemetry APIs.</Description>
-		<TargetFrameworks>net7.0;net8.0</TargetFrameworks>
+		<TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<LangVersion>latest</LangVersion>

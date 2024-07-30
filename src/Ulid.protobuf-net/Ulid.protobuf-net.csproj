@@ -3,7 +3,7 @@
 		<RootNamespace>ProtoBuf.Meta</RootNamespace>
 		<PackageTags>$(PackageTags);Ulid;protobuf</PackageTags>
 		<Description>Adds support for Ulid fields within protobuf-net serializable types.</Description>
-		<TargetFrameworks>netstandard2.0;net6.0;net7.0;net8.0</TargetFrameworks>
+		<TargetFrameworks>netstandard2.0;netstandard2.1;net6.0;net7.0;net8.0</TargetFrameworks>
 		<LangVersion>latest</LangVersion>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
