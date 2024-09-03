@@ -1,5 +1,3 @@
-using System.ComponentModel;
-using System.Security.Cryptography.X509Certificates;
 using DotPulsar.Abstractions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,6 +14,7 @@ public class PulsarServiceCollectionExtensionsTests
 				.AddInMemoryCollection(new[] {
 					new KeyValuePair<string, string?>("Pulsar:ServiceUrl", serviceUrl.ToString())
 				}).Build())
+			.AddPulsarOptions()
 			.AddPulsarClient()
 			.BuildServiceProvider();
 		var client = services.GetRequiredService<IPulsarClient>();

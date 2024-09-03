@@ -14,7 +14,7 @@ dotnet add package DotPulsar.Extensions.DependencyInjection
 ## Usage
 
 ```c#
-services.AddPulsarClient();
+services.AddPulsarOptions().AddPulsarClient();
 ```
 
 This will register the `IPulsarClient` as a singleton in the service collection with the default settings. The settings can be configured using the standard `appSettings.json` file with the following configuration keys supported.

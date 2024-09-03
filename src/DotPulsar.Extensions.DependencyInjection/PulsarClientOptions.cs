@@ -1,11 +1,14 @@
-using System.Security.Cryptography.X509Certificates;
 using DotPulsar.Abstractions;
+using DotPulsar.Internal;
+
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 
 namespace DotPulsar;
 
 public class PulsarClientOptions
 {
+	internal const string SectionName = "Pulsar";
+
 	/// <summary>
 	/// The service URL for the Pulsar cluster. The default is "pulsar://localhost:6650".
 	/// </summary>
@@ -17,7 +20,7 @@ public class PulsarClientOptions
 	/// <summary>
 	/// Authenticate using a client certificate. This is optional.
 	/// </summary>
-	public X509Certificate2? AuthenticateUsingClientCertificate {
+	public PulsarClientCertificate? AuthenticateUsingClientCertificate {
 		get;
 		set;
 	}
@@ -73,7 +76,7 @@ public class PulsarClientOptions
 	/// <summary>
 	/// Add a trusted certificate authority. This is optional.
 	/// </summary>
-	public X509Certificate2? TrustedCertificateAuthority {
+	public PulsarClientCertificate? TrustedCertificateAuthority {
 		get;
 		set;
 	}
@@ -109,8 +112,11 @@ public class PulsarClientOptions
 			builder.ServiceUrl(ServiceUrl);
 		}
 
-		if (AuthenticateUsingClientCertificate != null) {
-			builder.AuthenticateUsingClientCertificate(AuthenticateUsingClientCertificate);
+#pragma warning disable CA2000
+		var authenticateUsingClientCertificate = AuthenticateUsingClientCertificate?.Load();
+#pragma warning restore CA2000
+		if (authenticateUsingClientCertificate != null) {
+			builder.AuthenticateUsingClientCertificate(authenticateUsingClientCertificate);
 			builder.ConnectionSecurity(EncryptionPolicy.PreferEncrypted);
 		}
 
@@ -139,8 +145,11 @@ public class PulsarClientOptions
 			builder.RetryInterval(RetryInterval.Value);
 		}
 
-		if (TrustedCertificateAuthority != null) {
-			builder.TrustedCertificateAuthority(TrustedCertificateAuthority);
+#pragma warning disable CA2000
+		var trustedCertificateAuthority = TrustedCertificateAuthority?.Load();
+#pragma warning restore CA2000
+		if (trustedCertificateAuthority != null) {
+			builder.TrustedCertificateAuthority(trustedCertificateAuthority);
 		}
 
 		if (VerifyCertificateAuthority != null) {
