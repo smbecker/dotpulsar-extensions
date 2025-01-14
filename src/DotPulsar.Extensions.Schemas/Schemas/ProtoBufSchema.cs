@@ -34,6 +34,10 @@ public sealed class ProtoBufSchema<TMessage> : TypedSchema<TMessage>
 
 	protected override ReadOnlySequence<byte> EncodeBytes(TMessage message) {
 		using var measure = ProtoBuf.Serializer.Measure(message);
+		if (measure.Length <= 0) {
+			return ReadOnlySequence<byte>.Empty;
+		}
+
 		var writer = new ArrayBufferWriter<byte>((int)measure.Length);
 		measure.Serialize(writer);
 		return new ReadOnlySequence<byte>(writer.WrittenMemory);
