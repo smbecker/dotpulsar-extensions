@@ -3,6 +3,7 @@ using DotPulsar.Exceptions;
 using DotPulsar.Internal;
 using Polly;
 using Polly.Retry;
+using Polly.Timeout;
 
 namespace DotPulsar.Extensions;
 
@@ -37,7 +38,19 @@ public static class PulsarResilientExtensions
 		CancellationToken cancellationToken = default)
 		=> Process(consumer, processor, resiliencePipeline, new ProcessingOptions(), failureHandler, cancellationToken);
 
-	public static ResiliencePipelineBuilder AddRetryProducer(this ResiliencePipelineBuilder pipelineBuilder, Action<RetryStrategyOptions>? configure = null) {
+	public static ResiliencePipelineBuilder AddResilientProducer(this ResiliencePipelineBuilder pipelineBuilder, Action<RetryStrategyOptions>? configureRetry = null, Action<TimeoutStrategyOptions>? configureTimeout = null) {
+		return pipelineBuilder.AddProducerRetry(configureRetry).AddProducerTimeout(configureTimeout);
+	}
+
+	public static ResiliencePipelineBuilder AddProducerTimeout(this ResiliencePipelineBuilder pipelineBuilder, Action<TimeoutStrategyOptions>? configure = null) {
+		var options = new TimeoutStrategyOptions {
+			Timeout = TimeSpan.FromSeconds(30)
+		};
+		configure?.Invoke(options);
+		return pipelineBuilder.AddTimeout(options);
+	}
+
+	public static ResiliencePipelineBuilder AddProducerRetry(this ResiliencePipelineBuilder pipelineBuilder, Action<RetryStrategyOptions>? configure = null) {
 		var options = new RetryStrategyOptions {
 			MaxRetryAttempts = 10,
 			Delay = TimeSpan.FromMilliseconds(100),
@@ -76,7 +89,7 @@ public static class PulsarResilientExtensions
 		if (configurePipelineBuilder != null) {
 			configurePipelineBuilder(pipelineBuilder);
 		} else {
-			pipelineBuilder.AddRetryProducer();
+			pipelineBuilder.AddResilientProducer();
 		}
 
 		return CreateResilient(producerBuilder, pipelineBuilder.Build());

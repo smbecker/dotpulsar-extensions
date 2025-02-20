@@ -18,7 +18,7 @@ using Polly;
 
 namespace DotPulsar.Internal;
 
-internal sealed class ResilientProducer<TMessage> : IProducer<TMessage>
+public sealed class ResilientProducer<TMessage> : IProducer<TMessage>
 {
 	private readonly IProducerBuilder<TMessage> producerBuilder;
 	private readonly ResiliencePipeline resiliencePipeline;
