@@ -38,44 +38,40 @@ public static class PulsarResilientExtensions
 		CancellationToken cancellationToken = default)
 		=> Process(consumer, processor, resiliencePipeline, new ProcessingOptions(), failureHandler, cancellationToken);
 
-	public static ResiliencePipelineBuilder AddResilientProducer(this ResiliencePipelineBuilder pipelineBuilder, Action<RetryStrategyOptions>? configureRetry = null, Action<TimeoutStrategyOptions>? configureTimeout = null) {
-		return pipelineBuilder.AddProducerRetry(configureRetry).AddProducerTimeout(configureTimeout);
-	}
-
-	public static ResiliencePipelineBuilder AddProducerTimeout(this ResiliencePipelineBuilder pipelineBuilder, Action<TimeoutStrategyOptions>? configure = null) {
-		var options = new TimeoutStrategyOptions {
+	public static ResiliencePipelineBuilder AddResilientProducerDefaults(this ResiliencePipelineBuilder pipelineBuilder, Action<RetryStrategyOptions>? configureRetry = null, Action<TimeoutStrategyOptions>? configureTimeout = null) {
+		var timeoutOptions = new TimeoutStrategyOptions {
 			Timeout = TimeSpan.FromSeconds(30)
 		};
-		configure?.Invoke(options);
-		return pipelineBuilder.AddTimeout(options);
-	}
+		configureTimeout?.Invoke(timeoutOptions);
+		pipelineBuilder.AddTimeout(timeoutOptions);
 
-	public static ResiliencePipelineBuilder AddProducerRetry(this ResiliencePipelineBuilder pipelineBuilder, Action<RetryStrategyOptions>? configure = null) {
-		var options = new RetryStrategyOptions {
+		var retryOptions = new RetryStrategyOptions {
 			MaxRetryAttempts = 10,
 			Delay = TimeSpan.FromMilliseconds(100),
 			MaxDelay = TimeSpan.FromMilliseconds(5000),
 			BackoffType = DelayBackoffType.Exponential,
 			ShouldHandle = static args => {
 				var ex = args.Outcome.Exception;
-				if (ShouldHandleProducerException(ex)) {
+				if (ShouldRetryProducerException(ex)) {
 					return new ValueTask<bool>(true);
 				}
 
 				return new ValueTask<bool>(false);
 			}
 		};
-		configure?.Invoke(options);
-		return pipelineBuilder.AddRetry(options);
+		configureRetry?.Invoke(retryOptions);
+		pipelineBuilder.AddRetry(retryOptions);
+
+		return pipelineBuilder;
 	}
 
-	public static bool ShouldHandleProducerException(Exception? exception) {
+	public static bool ShouldRetryProducerException(Exception? exception) {
 		return exception is not ResilientProducerDisposedException
 			&& exception is not PulsarClientDisposedException
 			&& exception is ProducerFaultedException or ProducerClosedException or ObjectDisposedException;
 	}
 
-	public static IProducer<TMessage> CreateResilient<TMessage>(this IProducerBuilder<TMessage> producerBuilder, ResiliencePipeline? resiliencePipeline = null) {
+	public static IProducer<TMessage> CreateResilient<TMessage>(this IProducerBuilder<TMessage> producerBuilder, ResiliencePipeline? resiliencePipeline) {
 		ArgumentNullException.ThrowIfNull(producerBuilder);
 
 		if (resiliencePipeline == null || Equals(resiliencePipeline, ResiliencePipeline.Empty)) {
@@ -89,7 +85,7 @@ public static class PulsarResilientExtensions
 		if (configurePipelineBuilder != null) {
 			configurePipelineBuilder(pipelineBuilder);
 		} else {
-			pipelineBuilder.AddResilientProducer();
+			pipelineBuilder.AddResilientProducerDefaults();
 		}
 
 		return CreateResilient(producerBuilder, pipelineBuilder.Build());

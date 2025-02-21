@@ -140,11 +140,12 @@ public sealed class ResilientProducer<TMessage> : IProducer<TMessage>
 			this.producer = producer;
 		}
 
-		public async ValueTask Send(MessageMetadata metadata, TMessage message, Func<MessageId, ValueTask>? onMessageSent, CancellationToken cancellationToken) {
-			var messageId = await producer.Send(metadata, message, cancellationToken).ConfigureAwait(false);
-			if (onMessageSent != null) {
-				await onMessageSent(messageId).ConfigureAwait(false);
-			}
+		public ValueTask Send(MessageMetadata metadata, TMessage message, Func<MessageId, ValueTask>? onMessageSent, CancellationToken cancellationToken) {
+			return producer.resiliencePipeline.ExecuteAsync(static (state, ct) => {
+				var (sendChannel, message, metadata, onMessageSent) = state;
+				var producer = sendChannel.producer.GetOrCreateProducer();
+				return producer.SendChannel.Send(metadata, message, onMessageSent, ct);
+			}, (this, message, metadata, onMessageSent), cancellationToken);
 		}
 
 		public void Complete() {

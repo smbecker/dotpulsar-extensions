@@ -21,14 +21,14 @@ await using var dlq = new DeadLetterPolicy(
 ...
 await dlq.ReconsumeLater(message);
 ```
-You will need to have a separate consumer set up to listen to the retry topic in order to process the retry messages. If those messages fail, then you will need to re-submit them to the DLQ to mark them as retry or dead.
+You will need to have a separate consumer set up to listen to the retry topic in order to process the retry messages. If those messages fail, then you will need to re-submit them to the `DeadLetterPolicy` to mark them as retry or dead.
 
 **Using [Polly](https://www.pollydocs.org/) to create resilient producers:**
 ```c#
 await using var producer = client.NewProducer(Schema.String)
 	.Topic("...")
-	.CreateResilient(pipeline => {
-		pipeline.AddRetryProducer(options => {
+	.CreateResilient(static pipeline => {
+		pipeline.AddResilientProducerDefaults(configureRetry: static options => {
 			options.MaxRetryAttempts = 3;
 		});
 	});
