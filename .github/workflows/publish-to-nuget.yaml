@@ -35,7 +35,7 @@ jobs:
     - name: setup dotnet
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x'
+        dotnet-version: '9.0.x'
     - name: create nuget packages
       run: dotnet pack -c release --include-symbols -o artifacts
     - name: publish to nuget.org
