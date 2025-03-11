@@ -1,7 +1,9 @@
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using DotPulsar.Abstractions;
+using DotPulsar.Schemas;
 using Testcontainers.Pulsar;
 // ReSharper disable AccessToDisposedClosure
 
@@ -19,20 +21,20 @@ public class DeadLetterPolicyTests
 			await using var client = PulsarClient.Builder()
 				.ServiceUrl(new Uri(pulsarContainer.GetBrokerAddress()))
 				.Build();
-			await using var originProducer = client.NewProducer(Schema.String)
+			await using var originProducer = client.NewProducer()
 				.Topic("persistent://public/default/origin")
 				.Create();
-			await using var originConsumer = client.NewConsumer(Schema.String)
+			await using var originConsumer = client.NewConsumer()
 				.Topic("persistent://public/default/origin")
 				.SubscriptionName("test")
 				.SubscriptionType(SubscriptionType.Exclusive)
 				.Create();
-			await using var retryConsumer = client.NewConsumer(Schema.String)
+			await using var retryConsumer = client.NewConsumer()
 				.Topic("persistent://public/default/origin-RETRY")
 				.SubscriptionName("test")
 				.SubscriptionType(SubscriptionType.Exclusive)
 				.Create();
-			await using var dlqConsumer = client.NewConsumer(Schema.String)
+			await using var dlqConsumer = client.NewConsumer()
 				.Topic("persistent://public/default/origin-DLQ")
 				.SubscriptionName("test")
 				.SubscriptionType(SubscriptionType.Exclusive)
@@ -47,20 +49,20 @@ public class DeadLetterPolicyTests
 			_ = Task.Run(() => ProcessToQueue(retryConsumer, retries));
 			_ = Task.Run(() => ProcessToQueue(dlqConsumer, dead));
 
-			await originProducer.Send("test");
+			await originProducer.Send(StringSchema.UTF8.Encode("test"));
 			var testMessage = await originConsumer.Receive();
-			Assert.Equal("test", testMessage.Value());
+			Assert.Equal("test", StringSchema.UTF8.Decode(testMessage.Value(), null));
 
 			await dlq.ReconsumeLater(testMessage);
 			var retryMessage = await AwaitForMessage(retries);
 			Assert.NotNull(retryMessage);
-			Assert.Equal("test", Assert.IsAssignableFrom<IMessage<string>>(retryMessage).Value());
+			Assert.Equal("test", StringSchema.UTF8.Decode(Assert.IsAssignableFrom<IMessage<ReadOnlySequence<byte>>>(retryMessage).Value(), null));
 			Assert.Empty(dead);
 
 			await dlq.ReconsumeLater(retryMessage);
 			var deadMessage = await AwaitForMessage(dead);
 			Assert.NotNull(deadMessage);
-			Assert.Equal("test", Assert.IsAssignableFrom<IMessage<string>>(deadMessage).Value());
+			Assert.Equal("test", StringSchema.UTF8.Decode(Assert.IsAssignableFrom<IMessage<ReadOnlySequence<byte>>>(deadMessage).Value(), null));
 			Assert.Empty(retries);
 		} finally {
 			await pulsarContainer.StopAsync();
@@ -80,7 +82,7 @@ public class DeadLetterPolicyTests
 			return null;
 		}
 
-		static async Task ProcessToQueue(IConsumer<string> consumer, ConcurrentQueue<IMessage> queue) {
+		static async Task ProcessToQueue(IConsumer<ReadOnlySequence<byte>> consumer, ConcurrentQueue<IMessage> queue) {
 			try {
 				while (true) {
 					var message = await consumer.Receive();

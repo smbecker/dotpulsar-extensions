@@ -43,9 +43,9 @@ public sealed class PulsarClientCertificate
 			fullChain.ImportFromPemFile(Path);
 
 			if (KeyPath != null) {
-#pragma warning disable CA2000
+#pragma warning disable CA2000, SYSLIB0057
 				var certificate = new X509Certificate2(Path);
-#pragma warning restore CA2000
+#pragma warning restore CA2000, SYSLIB0057
 				try {
 					certificate = LoadCertificateKey(certificate, KeyPath, Password);
 				} catch {
@@ -65,7 +65,9 @@ public sealed class PulsarClientCertificate
 				return certificate;
 			}
 
+#pragma warning disable SYSLIB0057
 			return new X509Certificate2(Path, Password);
+#pragma warning restore SYSLIB0057
 		}
 
 		return null;
@@ -109,7 +111,9 @@ public sealed class PulsarClientCertificate
 			// We need to force the key to be persisted.
 			// See https://github.com/dotnet/runtime/issues/23749
 			var certificateBytes = fullCertificate.Export(X509ContentType.Pkcs12, "");
+#pragma warning disable SYSLIB0057
 			return new X509Certificate2(certificateBytes, "", X509KeyStorageFlags.DefaultKeySet);
+#pragma warning restore SYSLIB0057
 		}
 	}
 }

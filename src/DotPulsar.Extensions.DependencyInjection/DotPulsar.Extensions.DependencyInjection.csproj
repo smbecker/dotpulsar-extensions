@@ -4,7 +4,7 @@
 		<RootNamespace>DotPulsar</RootNamespace>
 		<PackageTags>$(PackageTags);Pulsar</PackageTags>
 		<Description>DotPulsar.Extensions.DependencyInjection adds support for using DotPulsar with the Microsoft.Extensions.DependencyInjection APIs.</Description>
-		<TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
+		<TargetFrameworks>net6.0;net7.0;net8.0;net9.0</TargetFrameworks>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<LangVersion>latest</LangVersion>
@@ -15,7 +15,6 @@
 
 	<ItemGroup>
 		<PackageReference Include="DotPulsar" />
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
 		<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
 	</ItemGroup>
 

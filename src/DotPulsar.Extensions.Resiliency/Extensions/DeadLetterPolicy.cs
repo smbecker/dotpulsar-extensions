@@ -57,7 +57,11 @@ public class DeadLetterPolicy : IDeadLetterPolicy, IAsyncDisposable
 			var lazyDeadLetterProducer = new Lazy<IProducer<ReadOnlySequence<byte>>>(() => deadLetterProducerBuilder.CreateResilient(resiliencePipeline));
 			disposeDeadLetterProducer = () => lazyDeadLetterProducer.IsValueCreated
 				? lazyDeadLetterProducer.Value.DisposeAsync()
+#if NET6_0_OR_GREATER
 				: ValueTask.CompletedTask;
+#else
+				: default;
+#endif
 			deadLetterProducer = async (metadata, message, ct) => await lazyDeadLetterProducer.Value.Send(metadata, message, ct).ConfigureAwait(false);
 		}
 
@@ -65,7 +69,11 @@ public class DeadLetterPolicy : IDeadLetterPolicy, IAsyncDisposable
 			var lazyRetryProducer = new Lazy<IProducer<ReadOnlySequence<byte>>>(() => retryProducerBuilder.CreateResilient(resiliencePipeline));
 			disposeRetryProducer = () => lazyRetryProducer.IsValueCreated
 				? lazyRetryProducer.Value.DisposeAsync()
+#if NET6_0_OR_GREATER
 				: ValueTask.CompletedTask;
+#else
+				: default;
+#endif
 			retryProducer = async (metadata, message, ct) => await lazyRetryProducer.Value.Send(metadata, message, ct).ConfigureAwait(false);
 		}
 
@@ -95,7 +103,13 @@ public class DeadLetterPolicy : IDeadLetterPolicy, IAsyncDisposable
 	}
 
 	public async ValueTask ReconsumeLater(IMessage message, TimeSpan? delayTime = null, IEnumerable<KeyValuePair<string, string?>>? customProperties = null, bool preventRetry = false, CancellationToken cancellationToken = default) {
+#if NET6_0_OR_GREATER
 		ArgumentNullException.ThrowIfNull(message);
+#else
+		if (message == null) {
+			throw new ArgumentNullException(nameof(message));
+		}
+#endif
 
 		var metadata = PrepareMetadata(message, delayTime ?? RetryDelay, customProperties);
 		if (retryProducer != null && !preventRetry) {
@@ -133,8 +147,8 @@ public class DeadLetterPolicy : IDeadLetterPolicy, IAsyncDisposable
 				metadata.OrderingKey = message.OrderingKey;
 			}
 
-			foreach (var (key, value) in message.Properties) {
-				metadata[key] = value;
+			foreach (var property in message.Properties) {
+				metadata[property.Key] = property.Value;
 			}
 
 			if (message.Properties.TryGetValue(DelayTimeMetadataKey, out var delayValue) && int.TryParse(delayValue, out var delayMillis)) {
@@ -153,9 +167,9 @@ public class DeadLetterPolicy : IDeadLetterPolicy, IAsyncDisposable
 			metadata[OriginMessageIdMetadataKey] = message.MessageId.ToString();
 
 			if (customProperties != null) {
-				foreach (var (key, value) in customProperties) {
-					if (value != null) {
-						metadata[key] = value;
+				foreach (var property in customProperties) {
+					if (property.Value != null) {
+						metadata[property.Key] = property.Value;
 					}
 				}
 			}

@@ -33,6 +33,7 @@ public sealed class ResilientProducer<TMessage> : IProducer<TMessage>
 		producer = GetOrCreateProducer();
 		ServiceUrl = producer.ServiceUrl;
 		Topic = producer.Topic;
+		State = new ResilienceState(this);
 		SendChannel = new ResilienceSendChannel(this);
 	}
 
@@ -41,6 +42,10 @@ public sealed class ResilientProducer<TMessage> : IProducer<TMessage>
 	}
 
 	public string Topic {
+		get;
+	}
+
+	public IState<ProducerState> State {
 		get;
 	}
 
@@ -79,24 +84,6 @@ public sealed class ResilientProducer<TMessage> : IProducer<TMessage>
 		return result;
 	}
 
-	public bool IsFinalState() => disposed;
-
-	public bool IsFinalState(ProducerState state) => GetOrCreateProducer().IsFinalState(state);
-
-	public ValueTask<ProducerState> OnStateChangeTo(ProducerState state, CancellationToken cancellationToken) {
-		return resiliencePipeline.ExecuteAsync(async static (args, ct) => {
-			var (instance, state) = args;
-			return await instance.GetOrCreateProducer().OnStateChangeTo(state, ct).ConfigureAwait(false);
-		}, (this, state), cancellationToken);
-	}
-
-	public ValueTask<ProducerState> OnStateChangeFrom(ProducerState state, CancellationToken cancellationToken = new CancellationToken()) {
-		return resiliencePipeline.ExecuteAsync(async static (args, ct) => {
-			var (instance, state) = args;
-			return await instance.GetOrCreateProducer().OnStateChangeFrom(state, ct).ConfigureAwait(false);
-		}, (this, state), cancellationToken);
-	}
-
 #pragma warning disable CA1816
 	public ValueTask DisposeAsync() {
 		if (!disposed) {
@@ -106,7 +93,11 @@ public sealed class ResilientProducer<TMessage> : IProducer<TMessage>
 				return last.DisposeAsync();
 			}
 		}
+#if NET6_0_OR_GREATER
 		return ValueTask.CompletedTask;
+#else
+		return default;
+#endif
 	}
 #pragma warning restore CA1816
 
@@ -119,17 +110,48 @@ public sealed class ResilientProducer<TMessage> : IProducer<TMessage>
 		}
 
 		public ValueTask OnStateChanged(ProducerStateChanged stateChanged, CancellationToken cancellationToken = new CancellationToken()) {
-			if (stateChanged.Producer.IsFinalState(stateChanged.ProducerState)) {
+			if (stateChanged.Producer.State.IsFinalState(stateChanged.ProducerState)) {
 				var toDispose = Interlocked.CompareExchange(ref instance.producer, null, (IProducer<TMessage>)stateChanged.Producer);
 				if (toDispose != null) {
 					return toDispose.DisposeAsync();
 				}
 			}
 
+#if NET6_0_OR_GREATER
 			return ValueTask.CompletedTask;
+#else
+			return default;
+#endif
 		}
 
 		public CancellationToken CancellationToken => CancellationToken.None;
+	}
+
+	private sealed class ResilienceState : IState<ProducerState>
+	{
+		private readonly ResilientProducer<TMessage> producer;
+
+		public ResilienceState(ResilientProducer<TMessage> producer) {
+			this.producer = producer;
+		}
+
+		public bool IsFinalState() => producer.disposed;
+
+		public bool IsFinalState(ProducerState state) => producer.GetOrCreateProducer().State.IsFinalState(state);
+
+		public ValueTask<ProducerState> OnStateChangeTo(ProducerState state, CancellationToken cancellationToken) {
+			return producer.resiliencePipeline.ExecuteAsync(async static (args, ct) => {
+				var (instance, state) = args;
+				return await instance.GetOrCreateProducer().State.OnStateChangeTo(state, ct).ConfigureAwait(false);
+			}, (producer, state), cancellationToken);
+		}
+
+		public ValueTask<ProducerState> OnStateChangeFrom(ProducerState state, CancellationToken cancellationToken = new CancellationToken()) {
+			return producer.resiliencePipeline.ExecuteAsync(async static (args, ct) => {
+				var (instance, state) = args;
+				return await instance.GetOrCreateProducer().State.OnStateChangeFrom(state, ct).ConfigureAwait(false);
+			}, (producer, state), cancellationToken);
+		}
 	}
 
 	private sealed class ResilienceSendChannel : ISendChannel<TMessage>
@@ -153,7 +175,7 @@ public sealed class ResilientProducer<TMessage> : IProducer<TMessage>
 		}
 
 		public ValueTask Completion(CancellationToken cancellationToken) {
-			return producer.producer?.SendChannel.Completion(cancellationToken) ?? ValueTask.CompletedTask;
+			return producer.producer?.SendChannel.Completion(cancellationToken) ?? default;
 		}
 	}
 }
