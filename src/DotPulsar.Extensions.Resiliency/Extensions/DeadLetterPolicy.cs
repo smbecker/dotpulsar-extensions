@@ -27,6 +27,9 @@ public class DeadLetterPolicy : IDeadLetterPolicy, IAsyncDisposable
 	public const string RealTopicMetadataKey = "REAL_TOPIC";
 	public const string RealSubscriptionMetadataKey = "REAL_SUBSCRIPTION";
 	public const string OriginMessageIdMetadataKey = "ORIGIN_MESSAGE_ID";
+	public const string ExceptionTypeMetadataKey = "EXCEPTION_TYPE";
+	public const string ExceptionMessageMetadataKey = "EXCEPTION_MESSAGE";
+	public const string StackTraceMetadataKey = "STACK_TRACE";
 	public const int DefaultMaxReconsumeTimes = 16;
 	public const string RetryTopicSuffix = "-RETRY";
 	public const string DeadLetterTopicSuffix = "-DLQ";
@@ -102,7 +105,7 @@ public class DeadLetterPolicy : IDeadLetterPolicy, IAsyncDisposable
 		GC.SuppressFinalize(this);
 	}
 
-	public async ValueTask ReconsumeLater(IMessage message, TimeSpan? delayTime = null, IEnumerable<KeyValuePair<string, string?>>? customProperties = null, bool preventRetry = false, CancellationToken cancellationToken = default) {
+	public async ValueTask ReconsumeLater(IMessage message, TimeSpan? delayTime = null, IEnumerable<KeyValuePair<string, string?>>? customRetryProperties = null, IEnumerable<KeyValuePair<string, string?>>? customDlqProperties = null, bool preventRetry = false, CancellationToken cancellationToken = default) {
 #if NET6_0_OR_GREATER
 		ArgumentNullException.ThrowIfNull(message);
 #else
@@ -111,7 +114,7 @@ public class DeadLetterPolicy : IDeadLetterPolicy, IAsyncDisposable
 		}
 #endif
 
-		var metadata = PrepareMetadata(message, delayTime ?? RetryDelay, customProperties);
+		var metadata = PrepareMetadata(message, delayTime ?? RetryDelay, customRetryProperties);
 		if (retryProducer != null && !preventRetry) {
 			var reconsumeTimes = GetReconsumeAndUpdate(metadata);
 			if (reconsumeTimes <= MaxRedeliveryCount) {
@@ -128,6 +131,7 @@ public class DeadLetterPolicy : IDeadLetterPolicy, IAsyncDisposable
 		}
 
 		if (deadLetterProducer != null) {
+			AddProperties(metadata, customDlqProperties);
 			await deadLetterProducer(metadata, message.Data, cancellationToken).ConfigureAwait(false);
 		}
 
@@ -166,6 +170,11 @@ public class DeadLetterPolicy : IDeadLetterPolicy, IAsyncDisposable
 			metadata[RealTopicMetadataKey] = originTopicNameStr;
 			metadata[OriginMessageIdMetadataKey] = message.MessageId.ToString();
 
+			AddProperties(metadata, customProperties);
+			return metadata;
+		}
+
+		static void AddProperties(MessageMetadata metadata, IEnumerable<KeyValuePair<string, string?>>? customProperties) {
 			if (customProperties != null) {
 				foreach (var property in customProperties) {
 					if (property.Value != null) {
@@ -173,8 +182,6 @@ public class DeadLetterPolicy : IDeadLetterPolicy, IAsyncDisposable
 					}
 				}
 			}
-
-			return metadata;
 		}
 
 		static int GetReconsumeAndUpdate(MessageMetadata metadata) {
@@ -186,5 +193,18 @@ public class DeadLetterPolicy : IDeadLetterPolicy, IAsyncDisposable
 			metadata[ReconsumeTimeMetadataKey] = reconsumeTimes.ToString(CultureInfo.InvariantCulture);
 			return reconsumeTimes;
 		}
+	}
+
+	public static IEnumerable<KeyValuePair<string, string?>> SerializeException(Exception exception) {
+#if NET6_0_OR_GREATER
+		ArgumentNullException.ThrowIfNull(exception);
+#else
+		if (exception == null) {
+			throw new ArgumentNullException(nameof(exception));
+		}
+#endif
+		yield return new(ExceptionTypeMetadataKey, exception.GetType().FullName);
+		yield return new(ExceptionMessageMetadataKey, exception.Message);
+		yield return new(StackTraceMetadataKey, exception.StackTrace);
 	}
 }

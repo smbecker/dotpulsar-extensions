@@ -14,6 +14,7 @@
 
 using DotPulsar.Abstractions;
 using DotPulsar.Exceptions;
+using DotPulsar.Internal.Exceptions;
 using Polly;
 
 namespace DotPulsar.Internal;
@@ -24,15 +25,15 @@ public sealed class ResilientProducer<TMessage> : IProducer<TMessage>
 	private readonly ResiliencePipeline resiliencePipeline;
 	private bool disposed;
 #pragma warning disable CA2213
-	private IProducer<TMessage>? producer;
+	private IProducer<TMessage>? currentProducer;
 #pragma warning restore CA2213
 
 	public ResilientProducer(IProducerBuilder<TMessage> producerBuilder, ResiliencePipeline? resiliencePipeline = null) {
 		this.producerBuilder = producerBuilder ?? throw new ArgumentNullException(nameof(producerBuilder));
 		this.resiliencePipeline = resiliencePipeline ?? ResiliencePipeline.Empty;
-		producer = GetOrCreateProducer();
-		ServiceUrl = producer.ServiceUrl;
-		Topic = producer.Topic;
+		currentProducer = GetOrCreateProducer();
+		ServiceUrl = currentProducer.ServiceUrl;
+		Topic = currentProducer.Topic;
 		State = new ResilienceState(this);
 		SendChannel = new ResilienceSendChannel(this);
 	}
@@ -54,6 +55,7 @@ public sealed class ResilientProducer<TMessage> : IProducer<TMessage>
 	}
 
 	public ValueTask<MessageId> Send(MessageMetadata metadata, TMessage message, CancellationToken cancellationToken = new CancellationToken()) {
+		ThrowIfDisposed();
 		return resiliencePipeline.ExecuteAsync(static (state, ct) => {
 			var (topicProducer, message, metadata) = state;
 			return topicProducer.GetOrCreateProducer().Send(metadata, message, ct);
@@ -61,36 +63,53 @@ public sealed class ResilientProducer<TMessage> : IProducer<TMessage>
 	}
 
 	private IProducer<TMessage> GetOrCreateProducer() {
-		if (disposed) {
-			throw new ResilientProducerDisposedException(GetType().FullName);
-		}
+		ThrowIfDisposed();
 
-		var current = producer;
+		var current = currentProducer;
 		if (current != null) {
 			return current;
 		}
 
 		var created = producerBuilder.Create();
-		var result = Interlocked.CompareExchange(ref producer, created, null);
+		var result = Interlocked.CompareExchange(ref currentProducer, created, null);
 		if (result == null) {
 			_ = StateMonitor.MonitorProducer(created, new StateChangedHandler(this));
 			return created;
 		}
 
 		if (!ReferenceEquals(result, created)) {
-			created.DisposeAsync().AsTask().Wait();
+			DisposeProducer(created);
 		}
 
 		return result;
+
+		static void DisposeProducer(IProducer producer) {
+			var task = DisposeAndIgnoreException(producer);
+			if (!task.IsCompleted) {
+				try {
+					task.AsTask().Wait();
+#pragma warning disable CA1031
+				} catch (Exception) {
+#pragma warning restore CA1031
+					// Ignore
+				}
+			}
+		}
+	}
+
+	private void ThrowIfDisposed() {
+		if (disposed) {
+			throw new ResilientProducerDisposedException("DotPulsar.Internal.ResilientProducer");
+		}
 	}
 
 #pragma warning disable CA1816
 	public ValueTask DisposeAsync() {
 		if (!disposed) {
 			disposed = true;
-			var last = Interlocked.Exchange(ref producer, null);
+			var last = Interlocked.Exchange(ref currentProducer, null);
 			if (last != null) {
-				return last.DisposeAsync();
+				return DisposeAndIgnoreException(last);
 			}
 		}
 #if NET6_0_OR_GREATER
@@ -100,6 +119,16 @@ public sealed class ResilientProducer<TMessage> : IProducer<TMessage>
 #endif
 	}
 #pragma warning restore CA1816
+
+	private static async ValueTask DisposeAndIgnoreException(IProducer producer) {
+		try {
+			await producer.DisposeAsync().ConfigureAwait(false);
+#pragma warning disable CA1031
+		} catch (Exception) {
+#pragma warning restore CA1031
+			// Ignore
+		}
+	}
 
 	private sealed class StateChangedHandler : IHandleStateChanged<ProducerStateChanged>
 	{
@@ -111,9 +140,9 @@ public sealed class ResilientProducer<TMessage> : IProducer<TMessage>
 
 		public ValueTask OnStateChanged(ProducerStateChanged stateChanged, CancellationToken cancellationToken = new CancellationToken()) {
 			if (stateChanged.Producer.State.IsFinalState(stateChanged.ProducerState)) {
-				var toDispose = Interlocked.CompareExchange(ref instance.producer, null, (IProducer<TMessage>)stateChanged.Producer);
+				var toDispose = Interlocked.CompareExchange(ref instance.currentProducer, null, (IProducer<TMessage>)stateChanged.Producer);
 				if (toDispose != null) {
-					return toDispose.DisposeAsync();
+					return DisposeAndIgnoreException(toDispose);
 				}
 			}
 
@@ -140,6 +169,7 @@ public sealed class ResilientProducer<TMessage> : IProducer<TMessage>
 		public bool IsFinalState(ProducerState state) => producer.GetOrCreateProducer().State.IsFinalState(state);
 
 		public ValueTask<ProducerState> OnStateChangeTo(ProducerState state, CancellationToken cancellationToken) {
+			producer.ThrowIfDisposed();
 			return producer.resiliencePipeline.ExecuteAsync(async static (args, ct) => {
 				var (instance, state) = args;
 				return await instance.GetOrCreateProducer().State.OnStateChangeTo(state, ct).ConfigureAwait(false);
@@ -147,6 +177,7 @@ public sealed class ResilientProducer<TMessage> : IProducer<TMessage>
 		}
 
 		public ValueTask<ProducerState> OnStateChangeFrom(ProducerState state, CancellationToken cancellationToken = new CancellationToken()) {
+			producer.ThrowIfDisposed();
 			return producer.resiliencePipeline.ExecuteAsync(async static (args, ct) => {
 				var (instance, state) = args;
 				return await instance.GetOrCreateProducer().State.OnStateChangeFrom(state, ct).ConfigureAwait(false);
@@ -157,12 +188,17 @@ public sealed class ResilientProducer<TMessage> : IProducer<TMessage>
 	private sealed class ResilienceSendChannel : ISendChannel<TMessage>
 	{
 		private readonly ResilientProducer<TMessage> producer;
+		private int isCompleted;
 
 		public ResilienceSendChannel(ResilientProducer<TMessage> producer) {
 			this.producer = producer;
 		}
 
 		public ValueTask Send(MessageMetadata metadata, TMessage message, Func<MessageId, ValueTask>? onMessageSent, CancellationToken cancellationToken) {
+			if (isCompleted != 0) {
+				throw new SendChannelCompletedException();
+			}
+			producer.ThrowIfDisposed();
 			return producer.resiliencePipeline.ExecuteAsync(static (state, ct) => {
 				var (sendChannel, message, metadata, onMessageSent) = state;
 				var producer = sendChannel.producer.GetOrCreateProducer();
@@ -171,11 +207,12 @@ public sealed class ResilientProducer<TMessage> : IProducer<TMessage>
 		}
 
 		public void Complete() {
-			producer.producer?.SendChannel.Complete();
+			isCompleted = 1;
+			producer.currentProducer?.SendChannel.Complete();
 		}
 
 		public ValueTask Completion(CancellationToken cancellationToken) {
-			return producer.producer?.SendChannel.Completion(cancellationToken) ?? default;
+			return producer.currentProducer?.SendChannel.Completion(cancellationToken) ?? default;
 		}
 	}
 }

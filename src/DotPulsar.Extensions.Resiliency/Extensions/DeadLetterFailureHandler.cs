@@ -22,27 +22,28 @@ public class DeadLetterFailureHandler : IConsumerFailureHandler
 	private readonly Func<IMessage, Exception, bool>? retryExceptionHandler;
 	private readonly Func<IMessage, Exception, TimeSpan?>? delayTimeSelector;
 	private readonly Func<Exception, IEnumerable<KeyValuePair<string, string?>>> exceptionSerializer;
+	private readonly Func<IMessage, Exception, IEnumerable<KeyValuePair<string, string?>>>? customPropertyProvider;
 
 	public DeadLetterFailureHandler(
 		IDeadLetterPolicy deadLetterPolicy,
 		Func<IMessage, Exception, bool>? retryExceptionHandler = null,
 		Func<Exception, IEnumerable<KeyValuePair<string, string?>>>? exceptionSerializer = null,
+		Func<IMessage, Exception, IEnumerable<KeyValuePair<string, string?>>>? customPropertyProvider = null,
 		Func<IMessage, Exception, TimeSpan?>? delayTimeSelector = null) {
 		this.deadLetterPolicy = deadLetterPolicy ?? throw new ArgumentNullException(nameof(deadLetterPolicy));
 		this.retryExceptionHandler = retryExceptionHandler;
 		this.delayTimeSelector = delayTimeSelector;
-		this.exceptionSerializer = exceptionSerializer ?? SerializeException;
-
-		static IEnumerable<KeyValuePair<string, string?>> SerializeException(Exception exception) {
-			yield return new("EXCEPTION_TYPE", exception.GetType().FullName);
-			yield return new("EXCEPTION_MESSAGE", exception.Message);
-			yield return new("STACK_TRACE", exception.StackTrace);
-		}
+		this.exceptionSerializer = exceptionSerializer ?? DeadLetterPolicy.SerializeException;
+		this.customPropertyProvider = customPropertyProvider;
 	}
 
 	public ValueTask HandleAsync(IMessage message, Exception exception, CancellationToken cancellationToken) {
-		var preventRetry = retryExceptionHandler == null || !retryExceptionHandler(message, exception);
-		var properties = exceptionSerializer(exception);
-		return deadLetterPolicy.ReconsumeLater(message, delayTime: delayTimeSelector?.Invoke(message, exception), customProperties: properties, preventRetry: preventRetry, cancellationToken: cancellationToken);
+		return deadLetterPolicy.ReconsumeLater(
+			message,
+			delayTime: delayTimeSelector?.Invoke(message, exception),
+			customRetryProperties: customPropertyProvider?.Invoke(message, exception),
+			customDlqProperties: exceptionSerializer(exception),
+			preventRetry: retryExceptionHandler == null || !retryExceptionHandler(message, exception),
+			cancellationToken: cancellationToken);
 	}
 }

@@ -12,8 +12,6 @@
 //  * limitations under the License.
 //  */
 
-using System.Runtime.Serialization;
-
 namespace DotPulsar.Exceptions;
 
 public sealed class ResilientProducerDisposedException : ObjectDisposedException
