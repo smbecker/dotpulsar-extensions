@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<RootNamespace>ProtoBuf.Meta</RootNamespace>
+		<RootNamespace>Google.Protobuf.WellKnownTypes</RootNamespace>
 		<PackageTags>$(PackageTags);Ulid;protobuf</PackageTags>
-		<Description>Adds support for Ulid fields within protobuf-net serializable types.</Description>
+		<Description>Adds support for Ulid fields within Google.ProtoBuf serializable types.</Description>
 		<TargetFrameworks>netstandard2.0;netstandard2.1;net8.0;net9.0</TargetFrameworks>
 		<LangVersion>latest</LangVersion>
 		<ImplicitUsings>enable</ImplicitUsings>
@@ -21,7 +21,7 @@
 		<None Include="README.md" Pack="true" PackagePath="" />
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="protobuf-net"/>
+		<PackageReference Include="Google.Protobuf"/>
 		<PackageReference Include="Ulid"/>
 	</ItemGroup>
 </Project>

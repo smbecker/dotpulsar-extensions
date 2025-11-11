@@ -1,0 +1,11 @@
+syntax="proto3";
+
+package ulid;
+
+option csharp_namespace="Google.Protobuf.WellKnownTypes";
+
+// This should match ulid.proto in Ulid.protobuf-net
+message Ulid {
+	fixed64 upper = 1;
+	fixed64 lower = 2;
+}

@@ -1,0 +1,7 @@
+syntax="proto3";
+
+import "ulid/ulid.proto";
+
+message Consumer {
+	ulid.Ulid id = 1;
+}

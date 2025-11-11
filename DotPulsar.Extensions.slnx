@@ -9,11 +9,13 @@
     <Project Path="src/DotPulsar.Extensions.OpenTelemetry/DotPulsar.Extensions.OpenTelemetry.csproj" />
     <Project Path="src/DotPulsar.Extensions.Resiliency/DotPulsar.Extensions.Resiliency.csproj" />
     <Project Path="src/DotPulsar.Extensions.Schemas/DotPulsar.Extensions.Schemas.csproj" />
+    <Project Path="src/Ulid.Protobuf/Ulid.Protobuf.csproj" />
     <Project Path="src/Ulid.protobuf-net/Ulid.protobuf-net.csproj" />
   </Folder>
   <Folder Name="/test/">
     <Project Path="test/DotPulsar.Extensions.DependencyInjection.Tests/DotPulsar.Extensions.DependencyInjection.Tests.csproj" />
     <Project Path="test/DotPulsar.Extensions.Resiliency.Tests/DotPulsar.Extensions.Resiliency.Tests.csproj" />
+    <Project Path="test/Ulid.Protobuf.Tests/Ulid.Protobuf.Tests.csproj" />
     <Project Path="test/Ulid.protobuf-net.Tests/Ulid.protobuf-net.Tests.csproj" />
   </Folder>
 </Solution>

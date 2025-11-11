@@ -81,7 +81,7 @@ public static class PulsarResilientExtensions
 #endif
 
 		if (resiliencePipeline == null || Equals(resiliencePipeline, ResiliencePipeline.Empty)) {
-			return producerBuilder.Create();
+			resiliencePipeline = new ResiliencePipelineBuilder().AddResilientProducerDefaults().Build();
 		}
 		return new ResilientProducer<TMessage>(producerBuilder, resiliencePipeline);
 	}
