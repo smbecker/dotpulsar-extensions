@@ -3,7 +3,7 @@ RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-FILES=$(git diff --cached --name-only --diff-filter=ACM "*.cs" "*.csproj" "*.props" "*.sln" "*.config")
+FILES=$(git diff --cached --name-only --diff-filter=ACM "*.cs" "*.csproj" "*.props" "*.slnx" "*.config")
 if [ -z "$FILES" ]; then
 	exit 0
 fi

@@ -1,0 +1,19 @@
+<Solution>
+  <Folder Name="/Build/">
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/DotPulsar.Extensions.DependencyInjection/DotPulsar.Extensions.DependencyInjection.csproj" />
+    <Project Path="src/DotPulsar.Extensions.OpenTelemetry/DotPulsar.Extensions.OpenTelemetry.csproj" />
+    <Project Path="src/DotPulsar.Extensions.Resiliency/DotPulsar.Extensions.Resiliency.csproj" />
+    <Project Path="src/DotPulsar.Extensions.Schemas/DotPulsar.Extensions.Schemas.csproj" />
+    <Project Path="src/Ulid.protobuf-net/Ulid.protobuf-net.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/DotPulsar.Extensions.DependencyInjection.Tests/DotPulsar.Extensions.DependencyInjection.Tests.csproj" />
+    <Project Path="test/DotPulsar.Extensions.Resiliency.Tests/DotPulsar.Extensions.Resiliency.Tests.csproj" />
+    <Project Path="test/Ulid.protobuf-net.Tests/Ulid.protobuf-net.Tests.csproj" />
+  </Folder>
+</Solution>
