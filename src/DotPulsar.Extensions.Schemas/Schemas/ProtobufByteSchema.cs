@@ -5,7 +5,7 @@ using Google.Protobuf;
 namespace DotPulsar.Schemas;
 
 #if NET8_0_OR_GREATER
-public static class ProtoBufSchema
+public static class ProtobufByteSchema
 {
 	public static ISchema<TMessage> Get<TMessage>()
 		where TMessage : IMessageWithParser<TMessage> {
@@ -15,7 +15,7 @@ public static class ProtoBufSchema
 	private static class ProtoBufSchemaCache<TMessage>
 		where TMessage : IMessageWithParser<TMessage>
 	{
-		internal static ProtoBufSchema<TMessage> Instance {
+		internal static ProtobufByteSchema<TMessage> Instance {
 			get;
 		} = new(TMessage.Parser);
 	}
@@ -27,15 +27,15 @@ public static class ProtoBufSchema
 /// </summary>
 /// <typeparam name="TMessage"></typeparam>
 /// <remarks>This still relies on the native Bytes schema rather than leveraging the official Pulsar schema registry.</remarks>
-public sealed class ProtoBufSchema<TMessage> : TypedSchema<TMessage>
+public sealed class ProtobufByteSchema<TMessage> : WrappedByteSchema<TMessage>
 {
 	private readonly MessageParser parser;
 
-	public ProtoBufSchema(MessageParser parser) {
+	public ProtobufByteSchema(MessageParser parser) {
 		this.parser = parser ?? throw new ArgumentNullException(nameof(parser));
 	}
 
-	public ProtoBufSchema(MessageParser parser, ISchema<ReadOnlySequence<byte>> byteSchema)
+	public ProtobufByteSchema(MessageParser parser, ISchema<ReadOnlySequence<byte>> byteSchema)
 		: base(byteSchema) {
 		this.parser = parser ?? throw new ArgumentNullException(nameof(parser));
 	}

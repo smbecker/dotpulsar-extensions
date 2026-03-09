@@ -13,9 +13,11 @@ namespace DotPulsar.Extensions;
 [SuppressMessage("Reliability", "CA2007:Consider calling ConfigureAwait on the awaited task")]
 public class DeadLetterPolicyTests
 {
+	private const string PulsarImage = "apachepulsar/pulsar:4.1.1";
+
 	[Fact]
 	public async Task can_retry_messages() {
-		var pulsarContainer = new PulsarBuilder().Build();
+		var pulsarContainer = new PulsarBuilder(PulsarImage).Build();
 		await pulsarContainer.StartAsync();
 		try {
 			await using var client = PulsarClient.Builder()

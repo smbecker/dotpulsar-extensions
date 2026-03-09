@@ -3,23 +3,23 @@ using DotPulsar.Abstractions;
 
 namespace DotPulsar.Schemas;
 
-public abstract class TypedSchema<TMessage> : ISchema<TMessage>
+public abstract class WrappedByteSchema<TMessage> : ISchema<TMessage>
 {
 	private readonly ISchema<ReadOnlySequence<byte>> byteSchema;
 
-	protected TypedSchema()
+	protected WrappedByteSchema()
 		: this(Schema.ByteSequence) {
 	}
 
-	protected TypedSchema(SchemaInfo schemaInfo)
+	protected WrappedByteSchema(SchemaInfo schemaInfo)
 		: this(schemaInfo, Schema.ByteSequence) {
 	}
 
-	protected TypedSchema(ISchema<ReadOnlySequence<byte>> byteSchema)
+	protected WrappedByteSchema(ISchema<ReadOnlySequence<byte>> byteSchema)
 		: this((byteSchema ?? throw new ArgumentNullException(nameof(byteSchema))).SchemaInfo, byteSchema) {
 	}
 
-	protected TypedSchema(SchemaInfo schemaInfo, ISchema<ReadOnlySequence<byte>> byteSchema) {
+	protected WrappedByteSchema(SchemaInfo schemaInfo, ISchema<ReadOnlySequence<byte>> byteSchema) {
 		this.byteSchema = byteSchema ?? throw new ArgumentNullException(nameof(byteSchema));
 		SchemaInfo = schemaInfo ?? throw new ArgumentNullException(nameof(schemaInfo));
 	}
