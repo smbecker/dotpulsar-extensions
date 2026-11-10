@@ -27,6 +27,25 @@ await using var producer = client.NewProducer(JsonByteSchema.Get<YourType>())
 
 Custom serialization options can be passed into the constructor `new JsonByteSchema<T>(options)` or by overriding the default options using `JsonByteSchema.DefaultSerializerOptions`.
 
+### Native AOT and trimming
+
+The `JsonSerializerOptions`-based APIs rely on reflection and are annotated with `RequiresUnreferencedCode`/`RequiresDynamicCode`. For trimmed or native AOT applications, use the overloads that accept a source-generated `JsonTypeInfo<T>` instead:
+
+```c#
+[JsonSerializable(typeof(YourType))]
+internal partial class MyJsonContext : JsonSerializerContext;
+
+await using var producer = client.NewProducer(JsonByteSchema.Get(MyJsonContext.Default.YourType))
+	.Topic("persistent://public/default/my-topic")
+	.Create();
+
+// or
+await using var consumer = client.NewJsonConsumer(MyJsonContext.Default.YourType)
+	.SubscriptionName("my-subscription")
+	.Topic("persistent://public/default/my-topic")
+	.Create();
+```
+
 The same can be done for Protobuf schemas using `ProtobufByteSchema.Get<T>()`.
 
 ```c#

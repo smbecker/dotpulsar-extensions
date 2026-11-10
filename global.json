@@ -1,0 +1,8 @@
+{
+	"sdk": {
+		"architecture": "x64",
+		"runtime": "clr",
+		"version": "11.0.100",
+		"rollForward": "latestFeature"
+	}
+}

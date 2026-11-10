@@ -4,7 +4,6 @@ using Google.Protobuf;
 
 namespace DotPulsar.Schemas;
 
-#if NET8_0_OR_GREATER
 public static class ProtobufByteSchema
 {
 	public static ISchema<TMessage> Get<TMessage>()
@@ -20,7 +19,6 @@ public static class ProtobufByteSchema
 		} = new(TMessage.Parser);
 	}
 }
-#endif
 
 /// <summary>
 /// A schema that uses ProtoBuf to serialize and deserialize messages.

@@ -12,7 +12,6 @@
 //  * limitations under the License.
 //  */
 
-#if NET8_0_OR_GREATER
 // ReSharper disable once CheckNamespace
 namespace Google.Protobuf;
 
@@ -23,4 +22,3 @@ public interface IMessageWithParser<T> : IMessage<T>
 		get;
 	}
 }
-#endif

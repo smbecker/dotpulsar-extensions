@@ -72,13 +72,7 @@ public static class PulsarResilientExtensions
 	}
 
 	public static IProducer<TMessage> CreateResilient<TMessage>(this IProducerBuilder<TMessage> producerBuilder, ResiliencePipeline? resiliencePipeline) {
-#if NET6_0_OR_GREATER
 		ArgumentNullException.ThrowIfNull(producerBuilder);
-#else
-		if (producerBuilder == null) {
-			throw new ArgumentNullException(nameof(producerBuilder));
-		}
-#endif
 
 		if (resiliencePipeline == null || Equals(resiliencePipeline, ResiliencePipeline.Empty)) {
 			resiliencePipeline = new ResiliencePipelineBuilder().AddResilientProducerDefaults().Build();

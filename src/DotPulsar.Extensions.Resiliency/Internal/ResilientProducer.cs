@@ -112,11 +112,7 @@ public sealed class ResilientProducer<TMessage> : IProducer<TMessage>
 				return DisposeAndIgnoreException(last);
 			}
 		}
-#if NET6_0_OR_GREATER
 		return ValueTask.CompletedTask;
-#else
-		return default;
-#endif
 	}
 #pragma warning restore CA1816
 
@@ -146,11 +142,7 @@ public sealed class ResilientProducer<TMessage> : IProducer<TMessage>
 				}
 			}
 
-#if NET6_0_OR_GREATER
 			return ValueTask.CompletedTask;
-#else
-			return default;
-#endif
 		}
 
 		public CancellationToken CancellationToken => CancellationToken.None;

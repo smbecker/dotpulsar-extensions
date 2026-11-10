@@ -60,11 +60,7 @@ public class DeadLetterPolicy : IDeadLetterPolicy, IAsyncDisposable
 			var lazyDeadLetterProducer = new Lazy<IProducer<ReadOnlySequence<byte>>>(() => deadLetterProducerBuilder.CreateResilient(resiliencePipeline));
 			disposeDeadLetterProducer = () => lazyDeadLetterProducer.IsValueCreated
 				? lazyDeadLetterProducer.Value.DisposeAsync()
-#if NET6_0_OR_GREATER
 				: ValueTask.CompletedTask;
-#else
-				: default;
-#endif
 			deadLetterProducer = async (metadata, message, ct) => await lazyDeadLetterProducer.Value.Send(metadata, message, ct).ConfigureAwait(false);
 		}
 
@@ -72,11 +68,7 @@ public class DeadLetterPolicy : IDeadLetterPolicy, IAsyncDisposable
 			var lazyRetryProducer = new Lazy<IProducer<ReadOnlySequence<byte>>>(() => retryProducerBuilder.CreateResilient(resiliencePipeline));
 			disposeRetryProducer = () => lazyRetryProducer.IsValueCreated
 				? lazyRetryProducer.Value.DisposeAsync()
-#if NET6_0_OR_GREATER
 				: ValueTask.CompletedTask;
-#else
-				: default;
-#endif
 			retryProducer = async (metadata, message, ct) => await lazyRetryProducer.Value.Send(metadata, message, ct).ConfigureAwait(false);
 		}
 
@@ -106,13 +98,7 @@ public class DeadLetterPolicy : IDeadLetterPolicy, IAsyncDisposable
 	}
 
 	public async ValueTask ReconsumeLater(IMessage message, TimeSpan? delayTime = null, IEnumerable<KeyValuePair<string, string?>>? customRetryProperties = null, IEnumerable<KeyValuePair<string, string?>>? customDlqProperties = null, bool preventRetry = false, CancellationToken cancellationToken = default) {
-#if NET6_0_OR_GREATER
 		ArgumentNullException.ThrowIfNull(message);
-#else
-		if (message == null) {
-			throw new ArgumentNullException(nameof(message));
-		}
-#endif
 
 		var metadata = PrepareMetadata(message, delayTime ?? RetryDelay, customRetryProperties);
 		if (retryProducer != null && !preventRetry) {
@@ -196,13 +182,7 @@ public class DeadLetterPolicy : IDeadLetterPolicy, IAsyncDisposable
 	}
 
 	public static IEnumerable<KeyValuePair<string, string?>> SerializeException(Exception exception) {
-#if NET6_0_OR_GREATER
 		ArgumentNullException.ThrowIfNull(exception);
-#else
-		if (exception == null) {
-			throw new ArgumentNullException(nameof(exception));
-		}
-#endif
 		yield return new(ExceptionTypeMetadataKey, exception.GetType().FullName);
 		yield return new(ExceptionMessageMetadataKey, exception.Message);
 		yield return new(StackTraceMetadataKey, exception.StackTrace);
